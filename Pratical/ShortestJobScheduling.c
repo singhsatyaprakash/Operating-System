@@ -1,87 +1,65 @@
-#include <stdio.h>
-#include <limits.h>
-#include <stdbool.h>
-
-typedef struct process {
-    int pid, at, bt, ct, tat, wt, rt;
-} Process;
-
-int main() {
+#include<stdio.h>
+#include<limits.h>
+#include<stdbool.h>
+typedef struct process{
+    int pid,at,bt,ct,tat,wt,rt;
+    int btremain;
+}Process;
+int main(){
     int n;
-    printf("Enter No. of processes: ");
-    scanf("%d", &n);
-
+    printf("Enter No. of process:");
+    scanf("%d",&n);
     Process p[n];
-    for (int i = 0; i < n; i++) {
-        printf("Enter process %d details (ArrivalTime BurstTime): ", i);
-        scanf("%d %d", &p[i].at, &p[i].bt);
-        p[i].pid = i;
-        p[i].rt = -1;  // mark response time uninitialized
+    for(int i=0;i<n;i++){
+        printf("Enter process %d deatails (Arrtivaltime,brustTime):",i);
+        scanf("%d%d",&p[i].at,&p[i].bt);
+        p[i].pid=i;
+        p[i].btremain=p[i].bt;
     }
-
-    int remBT[n];
-    for (int i = 0; i < n; i++) remBT[i] = p[i].bt;
-
-    int completed = 0, currTime = 0, wasteTime = 0;
-    int lastCompletion = 0;
-
-    while (completed != n) {
-        int idx = -1;
-        int minRem = INT_MAX;
-
-        // Find process with minimum remaining time that has arrived
-        for (int i = 0; i < n; i++) {
-            if (p[i].at <= currTime && remBT[i] > 0) {
-                if (remBT[i] < minRem) {
-                    minRem = remBT[i];
-                    idx = i;
+    //calculation...
+    int currTime=0,wasteTime=0;
+    int completed[n];
+    for(int i=0;i<n;i++){
+        completed[i]=0;
+    }
+    int count=0;
+    while(count!=n){
+        int idx=-1;
+        int minBrust=INT_MAX;
+        for(int i=0;i<n;i++){
+            if(!completed[i] && p[i].at<=currTime){
+                if(p[i].bt<minBrust){
+                    minBrust=p[i].bt;
+                    idx=i;
                 }
             }
         }
-
-        if (idx == -1) {
-            currTime++;      // CPU is idle
-            wasteTime++;
-        } else {
-            // First response time (when it starts first time)
-            if (p[idx].rt == -1) {
-                p[idx].rt = currTime - p[idx].at;
-            }
-
-            remBT[idx]--;
+        if(idx==-1){
             currTime++;
-
-            if (remBT[idx] == 0) {
-                completed++;
-                p[idx].ct = currTime;
-                p[idx].tat = p[idx].ct - p[idx].at;
-                p[idx].wt = p[idx].tat - p[idx].bt;
-                lastCompletion = currTime;
-            }
+            wasteTime++;
+        }
+        else{
+                p[idx].ct=currTime+p[idx].bt;
+                p[idx].tat=p[idx].ct-p[idx].at;
+                p[idx].wt=p[idx].tat-p[idx].bt;
+                p[idx].rt=currTime-p[idx].at;//startTime- arrivalTime
+                currTime=p[idx].ct;
+                completed[idx]=1;
+                count++;
         }
     }
-
-    printf("\nProcess\tAT\tBT\tCT\tTAT\tWT\tRT\n");
-    int totalWT = 0, totalTAT = 0, totalRT = 0, totalBT = 0;
-    for (int i = 0; i < n; i++) {
-        printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
-               p[i].pid, p[i].at, p[i].bt,
-               p[i].ct, p[i].tat, p[i].wt, p[i].rt);
-        totalWT += p[i].wt;
-        totalTAT += p[i].tat;
-        totalRT += p[i].rt;
-        totalBT += p[i].bt;
+    printf("Process\tAT\tBT\tCT\tTAT\tWT\tRT\n");
+    int totalWt=0,totalTat=0,totalRt=0;
+    for(int i=0;i<n;i++){
+        printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",p[i].pid,p[i].at,p[i].bt,p[i].ct,p[i].tat,p[i].wt,p[i].rt);
+        totalWt+=p[i].wt;
+        totalTat+=p[i].tat;
+        totalRt+=p[i].rt;
     }
-
-    printf("\nAvg TAT: %.2f\n", (float)totalTAT / n);
-    printf("Avg WT: %.2f\n", (float)totalWT / n);
-    printf("Avg RT: %.2f\n", (float)totalRT / n);
-
-    float cpuUtil = ((float)(lastCompletion - wasteTime) / lastCompletion) * 100.0;
-    float throughput = (float)n / lastCompletion;
-
-    printf("CPU Utilization: %.2f%%\n", cpuUtil);
-    printf("Throughput: %.4f processes/unit time\n", throughput);
-
+    printf("Avg TAT:%.2f\n",(float)totalTat/n);
+    printf("Avg WT:%.2f\n",(float)totalWt/n);
+    printf("Avg Rt:%.2f\n",(float)totalRt/n);
+    printf("CPU Utilization:%.2f\n",(float)((currTime-wasteTime)/currTime)*100.0);
+    printf("Throughput:%.2f\n",(float)n/currTime);
     return 0;
 }
